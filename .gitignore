@@ -11,6 +11,10 @@
 *.gch
 *.pch
 
+lex.yy.c
+y.tab.c
+y.tab.h
+
 # Compiled Dynamic libraries
 *.so
 *.dylib
