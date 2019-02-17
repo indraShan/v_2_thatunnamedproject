@@ -6,13 +6,10 @@
 #include "File.h"
 #include "Record.h"
 
-using namespace std;
-
 class BigQ {
 
 private:
 
-	void writeRunOfRecords(vector<Record> records, int recordCount, OrderMaker &sortorder);
 public:
 
 	BigQ (Pipe &in, Pipe &out, OrderMaker &sortorder, int runlen);

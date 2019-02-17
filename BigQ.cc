@@ -2,6 +2,8 @@
 #include <vector>
 #include "ComparisonEngine.h"
 
+using namespace std;
+
 struct RecordComparator {
 	OrderMaker *orderMaker;
 	RecordComparator(OrderMaker *order) : orderMaker(order) {}
@@ -12,6 +14,16 @@ struct RecordComparator {
 		return comp.Compare(&left, &right, orderMaker);
 	}
 };
+
+void writeRunOfRecords(vector<Record> records, int recordCount, OrderMaker &sortorder) {
+	printf("writeRunOfRecords called. recordCount = %d \n", recordCount);
+	sort(records.begin(), records.end(), RecordComparator(&sortorder));
+
+	for (std::vector<Record>::iterator it=records.begin(); it!=records.end(); ++it) {
+		Record record = *it;
+		record.Print(new Schema ("catalog", "region"));
+	}
+}
 
 BigQ ::BigQ(Pipe &in, Pipe &out, OrderMaker &sortorder, int runlen)
 {
@@ -80,16 +92,6 @@ BigQ ::BigQ(Pipe &in, Pipe &out, OrderMaker &sortorder, int runlen)
 
     // finally shut down the out pipe
 	out.ShutDown ();
-}
-
-void BigQ::writeRunOfRecords(vector<Record> records, int recordCount, OrderMaker &sortorder) {
-	printf("writeRunOfRecords called. recordCount = %d \n", recordCount);
-	sort(records.begin(), records.end(), RecordComparator(&sortorder));
-
-	for (std::vector<Record>::iterator it=records.begin(); it!=records.end(); ++it) {
-		Record record = *it;
-		record.Print(new Schema ("catalog", "region"));
-	}
 }
 
 BigQ::~BigQ () {
