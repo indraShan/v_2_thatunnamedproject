@@ -17,7 +17,7 @@ struct RecordComparator {
 
 void writeRunOfRecords(vector<Record> records, int recordCount, OrderMaker &sortorder) {
 	printf("writeRunOfRecords called. recordCount = %d \n", recordCount);
-	sort(records.begin(), records.end(), RecordComparator(&sortorder));
+	std::sort(records.begin(), records.end(), RecordComparator(&sortorder));
 
 	for (std::vector<Record>::iterator it=records.begin(); it!=records.end(); ++it) {
 		Record record = *it;
