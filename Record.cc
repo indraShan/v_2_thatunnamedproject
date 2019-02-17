@@ -5,6 +5,15 @@
 #include <stdlib.h>
 #include <iostream>
 
+Record :: Record (const Record& other) {
+	bits = NULL;
+	this->Copy(&other);
+}
+
+Record& Record::operator=( const Record& other ) {
+	this->Copy(&other);
+    return *this;
+}
 
 Record :: Record () {
 	bits = NULL;
@@ -159,7 +168,7 @@ void Record :: Consume (Record *fromMe) {
 }
 
 
-void Record :: Copy (Record *copyMe) {
+void Record :: Copy (const Record *copyMe) {
 	// this is a deep copy, so allocate the bits and move them over!
 	delete [] bits;
 	bits = new (std::nothrow) char[((int *) copyMe->bits)[0]];

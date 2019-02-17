@@ -15,6 +15,11 @@ lex.yy.c
 y.tab.c
 y.tab.h
 
+.vscode/*
+
+lineitem.bin
+region.bin
+
 # Compiled Dynamic libraries
 *.so
 *.dylib

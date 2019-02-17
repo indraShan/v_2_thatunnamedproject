@@ -36,6 +36,8 @@ private:
 public:
 	Record ();
 	~Record();
+	Record (const Record& other);
+	Record& operator=( const Record& other );
 
 	// suck the contents of the record fromMe into this; note that after
 	// this call, fromMe will no longer have anything inside of it
@@ -44,7 +46,7 @@ public:
 	// make a copy of the record fromMe; note that this is far more 
 	// expensive (requiring a bit-by-bit copy) than Consume, which is
 	// only a pointer operation
-	void Copy (Record *copyMe);
+	void Copy (const Record *copyMe);
 
 	// reads the next record from a pointer to a text file; also requires
 	// that the schema be given; returns a 0 if there is no data left or
