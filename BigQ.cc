@@ -1,5 +1,6 @@
 #include "BigQ.h"
 #include <vector>
+#include <algorithm>
 #include "ComparisonEngine.h"
 
 using namespace std;
@@ -17,7 +18,7 @@ struct RecordComparator {
 
 void writeRunOfRecords(vector<Record> records, int recordCount, OrderMaker &sortorder) {
 	printf("writeRunOfRecords called. recordCount = %d \n", recordCount);
-	std::sort(records.begin(), records.end(), RecordComparator(&sortorder));
+	sort(records.begin(), records.end(), RecordComparator(&sortorder));
 
 	for (std::vector<Record>::iterator it=records.begin(); it!=records.end(); ++it) {
 		Record record = *it;
