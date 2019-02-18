@@ -1,8 +1,6 @@
 #include "BigQ.h"
-#include <vector>
-#include <algorithm>
 #include "ComparisonEngine.h"
-#include <queue>
+
 
 using namespace std;
 

@@ -5,6 +5,9 @@
 #include "Pipe.h"
 #include "File.h"
 #include "Record.h"
+#include <vector>
+#include <algorithm>
+#include <queue>
 
 class BigQ {
 
