@@ -44,10 +44,10 @@ void BigQ::writeLastPageToFile(Page *page)
 // Write that page to file.
 // Move to next page.
 // Record first page and length.
-struct HeapRecord BigQ::writeRunOfRecords(vector<Record> records, int recordCount, OrderMaker &sortorder)
+struct HeapRecord BigQ::writeRunOfRecords(vector<Record> records, int recordCount, OrderMaker *sortorder)
 {
 	// printf("writeRunOfRecords called. recordCount = %d \n", recordCount);
-	sort(records.begin(), records.end(), RecordComparator(&sortorder));
+	sort(records.begin(), records.end(), RecordComparator(sortorder));
 
 	int length = heapFile->GetLength();
 	int firstPageIndex = length == 0 ? 0 : length - 1;
@@ -78,7 +78,7 @@ struct HeapRecord BigQ::writeRunOfRecords(vector<Record> records, int recordCoun
 	// printf("firstPageIndex =  %d \n", firstPageIndex);
 	// printf("lastPageIndex =  %d \n", lastPageIndex);
 	HeapRecord heapRecord;
-	heapRecord.orderMaker = &sortorder;
+	heapRecord.orderMaker = sortorder;
 	heapRecord.record = firstRecord;
 	heapRecord.currentPageIndex = firstPageIndex;
 	heapRecord.currentRecordIndex = 0;
@@ -130,12 +130,8 @@ int BigQ::nextHeapRecord(HeapRecord current, HeapRecord *nextRecord)
 	return 1;
 }
 
-BigQ ::BigQ(Pipe &in, Pipe &out, OrderMaker &sortorder, int runlen)
-{
-	// cout << "Biq constructor called \n";
-	heapFile = new File();
-	heapFile->Open(0, "heap_file_sort_file.bin");
-
+void BigQ::startMerge() {
+	// printf("In the startMerge method \n");
 	vector<Record> records;
 	Record record;
 	Page page;
@@ -143,7 +139,8 @@ BigQ ::BigQ(Pipe &in, Pipe &out, OrderMaker &sortorder, int runlen)
 	int recordCount = 0;
 	int numberOfRuns = 0;
 	vector<HeapRecord> runs;
-	while (in.Remove(&record) == 1)
+	// printf("Will call remove \n");
+	while (inputPipe->Remove(&record) == 1)
 	{
 		// Copy the record as the Page append API consumes it.
 		Record copied;
@@ -154,12 +151,12 @@ BigQ ::BigQ(Pipe &in, Pipe &out, OrderMaker &sortorder, int runlen)
 			// Append failed.
 			page.EmptyItOut();
 			// Do we have enough records for a run?
-			if (pageCount >= runlen)
+			if (pageCount >= runLength)
 			{
 				// We have filled data worth one run length.
 				// printf("Will write one run. Number of records in run = %d \n", recordCount);
 				pageCount = 0;
-				runs.push_back(writeRunOfRecords(records, recordCount, sortorder));
+				runs.push_back(writeRunOfRecords(records, recordCount, orderMaker));
 				recordCount = 0;
 				// recordCount = 0;
 				numberOfRuns++;
@@ -176,7 +173,7 @@ BigQ ::BigQ(Pipe &in, Pipe &out, OrderMaker &sortorder, int runlen)
 		records.push_back(copied);
 		recordCount++;
 	}
-	runs.push_back(writeRunOfRecords(records, recordCount, sortorder));
+	runs.push_back(writeRunOfRecords(records, recordCount, orderMaker));
 
 	printf("Number of runs = %d \n", numberOfRuns);
 	// printf("Number of heap records = %d \n", runs.size());
@@ -199,21 +196,41 @@ BigQ ::BigQ(Pipe &in, Pipe &out, OrderMaker &sortorder, int runlen)
 		HeapRecord nextRecord;
 		if (nextHeapRecord(topRecord, &nextRecord) == 1)
 		{
-			nextRecord.orderMaker = &sortorder;
+			nextRecord.orderMaker = orderMaker;
 			mergeQueue.push(nextRecord);
 		}
 		// Push the record to output pipe.
-		out.Insert(&topRecord.record);
+		outputPipe->Insert(&topRecord.record);
 		recordsWritten++;
 	}
 	printf("Number of records written to pipe = %d \n", recordsWritten);
-	// HeapRecord topRecord = mergeQueue.top();
-	// topRecord.record.Print(new Schema ("catalog", "lineitem"));
-	out.ShutDown();
+	outputPipe->ShutDown();
+}
+
+void* run(void *arg)
+ {
+	BigQ *bigQ = (BigQ *)arg;
+	bigQ->startMerge();
+    pthread_exit(NULL);
+ }
+
+BigQ ::BigQ(Pipe &in, Pipe &out, OrderMaker &sortorder, int runlen)
+{
+	// cout << "Biq constructor called \n";
+	inputPipe = &in;
+	outputPipe = &out;
+	orderMaker = &sortorder;
+	runLength = runlen;
+	heapFile = new File();
+	heapFile->Open(0, "heap_file_sort_file.bin");
+
+	pthread_t bigThread;
+	pthread_create(&bigThread, NULL, &run, (void *)this);
 }
 
 BigQ::~BigQ()
 {
+	// printf("Destruct called. \n");
 	if (heapFile != NULL)
 	{
 		heapFile->Close();
