@@ -1,6 +1,8 @@
 #include "test.h"
 #include "BigQ.h"
 #include <pthread.h>
+#include <gtest/gtest.h>
+#include <gmock/gmock.h>
 
 void *producer (void *arg) {
 
@@ -114,7 +116,7 @@ void test1 (int option, int runlen) {
 }
 
 int main (int argc, char *argv[]) {
-
+	testing::InitGoogleTest(&argc, argv);
 	setup ();
 
 	relation *rel_ptr[] = {n, r, c, p, ps, o, li};
