@@ -102,6 +102,14 @@ OrderMaker :: OrderMaker(Schema *schema) {
         }
 }
 
+void OrderMaker::testing_helper_setAttributes(int numberOfAttributes, int* attibutes, Type *types) {
+	numAtts = numberOfAttributes;
+	for (int index = 0; index < numAtts; index++)
+	{
+		whichAtts[index] = *(attibutes + index);
+		whichTypes[index] = *(types + index);
+	}
+}
 
 void OrderMaker :: Print () {
 	printf("NumAtts = %5d\n", numAtts);
@@ -143,7 +151,7 @@ int CNF :: GetSortOrders (OrderMaker &left, OrderMaker &right) {
 		// now verify that it operates over atts from both tables
 		if (!((orList[i][0].operand1 == Left && orList[i][0].operand2 == Right) ||
 		      (orList[i][0].operand2 == Left && orList[i][0].operand1 == Right))) {
-			continue;		
+			// continue;		
 		}
 
 		// since we are here, we have found a join attribute!!!

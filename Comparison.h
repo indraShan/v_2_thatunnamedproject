@@ -49,7 +49,6 @@ class OrderMaker {
 	Type whichTypes[MAX_ANDS];
 
 public:
-	
 	// creates an empty OrdermMaker
 	OrderMaker();
 
@@ -59,6 +58,9 @@ public:
 
 	// print to the screen
 	void Print ();
+
+	// Sole purpose of this method is to help in testing this class.
+	void testing_helper_setAttributes(int numberOfAttributes, int* attibutes, Type *types);
 };
 
 class Record;
