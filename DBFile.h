@@ -4,6 +4,7 @@
 #include "TwoWayList.h"
 #include "Record.h"
 #include "Schema.h"
+#include "GenericDBFile.h"
 #include "File.h"
 #include "Comparison.h"
 #include "ComparisonEngine.h"
@@ -18,18 +19,8 @@ typedef enum {heap, sorted, tree} fType;
 class DBFile {
 
 private:
-	bool writeInPlace;
-	File *actualFile;
-	Page *currentPage;
-	int currentReadPageIndex;
-	int lastReturnedRecordIndex;
-	fType fileType;
-	bool inReadMode;
-	void initState(bool createFile, const char *f_path);
-	void updateToLastPage(Page *page);
-	bool fileExists(const char *f_path);
-	void writePageToDisk(Page *page);
-	void updatePageToLocation(Page *page, int pageIndex, int location);
+	GenericDBFile *dbInstance;
+	
 
 public:
 	DBFile (); 
