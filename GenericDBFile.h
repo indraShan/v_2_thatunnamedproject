@@ -13,23 +13,22 @@ class Page;
 
 typedef enum {heap, sorted, tree} fType;
 
-
 class GenericDBFile {
 
 public:
 	GenericDBFile (); 
 	virtual ~GenericDBFile ();
 
-	virtual int Create (const char *fpath, fType file_type, void *startup);
-	virtual int Open (const char *fpath);
-	virtual int Close ();
+	virtual int Create (const char *fpath, fType file_type, void *startup) = 0;
+	virtual int Open (const char *fpath) = 0;
+	virtual int Close () = 0;
 
-	virtual void Load (Schema &myschema, const char *loadpath);
+	virtual void Load (Schema &myschema, const char *loadpath) = 0;
 
-	virtual void MoveFirst ();
-	virtual void Add (Record &addme);
-	virtual int GetNext (Record &fetchme);
-	virtual int GetNext (Record &fetchme, CNF &cnf, Record &literal);
+	virtual void MoveFirst () = 0;
+	virtual void Add (Record &addme) = 0;
+	virtual int GetNext (Record &fetchme) = 0;
+	virtual int GetNext (Record &fetchme, CNF &cnf, Record &literal) = 0;
 
 };
 

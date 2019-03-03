@@ -8,11 +8,10 @@
 #include "File.h"
 #include "Comparison.h"
 #include "ComparisonEngine.h"
+#include "GenericDBFile.h"
 
 class File;
 class Page;
-
-typedef enum {heap, sorted, tree} fType;
 
 // stub DBFile header..replace it with your own DBFile.h 
 
