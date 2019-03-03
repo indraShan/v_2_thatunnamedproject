@@ -17,8 +17,8 @@ typedef enum {heap, sorted, tree} fType;
 class GenericDBFile {
 
 public:
-	DBFile (); 
-	virtual ~DBFile ();
+	virtual GenericDBFile (); 
+	virtual ~GenericDBFile ();
 
 	virtual int Create (const char *fpath, fType file_type, void *startup);
 	virtual int Open (const char *fpath);
