@@ -10,8 +10,7 @@
 #include <iostream>
 
 DBFile::DBFile() {
-    actualFile = NULL;
-    currentPage = NULL;
+    dbInstance = NULL;
 }
 
 DBFile ::~DBFile() {
@@ -43,6 +42,9 @@ void DBFile::MoveFirst() {
 
 int DBFile::Close() {
     dbInstance->Close();
+
+    delete dbInstance;
+    dbInstance = NULL;
 }
 
 

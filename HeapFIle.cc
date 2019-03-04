@@ -8,7 +8,10 @@
 #include "Defs.h"
 #include <iostream>
 
-HeapFile::HeapFile() {}
+HeapFile::HeapFile() {
+    actualFile = NULL;
+    currentPage = NULL;
+}
 
 HeapFile ::~HeapFile() {
     cout << "DBFile (heap) being destroyed\n";

@@ -12,8 +12,6 @@
 class File;
 class Page;
 
-typedef enum {heap, sorted, tree} fType;
-
 class HeapFile : public GenericDBFile{
 	private:
 		bool writeInPlace;
