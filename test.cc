@@ -2,24 +2,25 @@
 #include "BigQ.h"
 #include <pthread.h>
 #include "DBFile.h"
+#include "SortedDBFile.h"
 
 void test1 ();
 void test2 ();
 void test3 ();
 
 int add_data (FILE *src, int numrecs, int &res) {
-	DBFile dbfile;
+	SortedDBFile dbfile;
 	dbfile.Open (rel->path ());
 	Record temp;
 
 	int proc = 0;
 	int xx = 20000;
-	while ((res = temp.SuckNextRecord (rel->schema (), src)) && ++proc < numrecs) {
+	while ((res = temp.SuckNextRecord (rel->schema (), src)) && res == 1 && ++proc < numrecs) {
 		dbfile.Add (temp);
 		if (proc == xx) cerr << "\t ";
 		if (proc % xx == 0) cerr << ".";
 	}
-
+	dbfile.GetNext (temp);
 	dbfile.Close ();
 	return proc;
 }
@@ -40,9 +41,9 @@ void test1 () {
 	}
 	struct {OrderMaker *o; int l;} startup = {&o, runlen};
 
-	DBFile dbfile;
+	SortedDBFile dbfile;
 	cout << "\n output to dbfile : " << rel->path () << endl;
-	dbfile.Create (rel->path(), heap, &startup);
+	dbfile.Create (rel->path(), sorted, &startup);
 	dbfile.Close ();
 
 	char tbl_path[100];
@@ -83,7 +84,7 @@ void test1 () {
 void test2 () {
 
 	cout << " scan : " << rel->path() << "\n";
-	DBFile dbfile;
+	SortedDBFile dbfile;
 	dbfile.Open (rel->path());
 	dbfile.MoveFirst ();
 
@@ -107,7 +108,7 @@ void test3 () {
 	Record literal;
 	rel->get_cnf (cnf, literal);
 
-	DBFile dbfile;
+	SortedDBFile dbfile;
 	dbfile.Open (rel->path());
 	dbfile.MoveFirst ();
 

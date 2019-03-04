@@ -14,7 +14,7 @@ using namespace std;
 // make sure that the information below is correct
 
 char *catalog_path = "catalog"; 
-char *tpch_dir ="/Users/vivekchintalapati/Desktop/data/"; // dir where dbgen tpch files (extension *.tbl) can be found
+char *tpch_dir ="/cise/tmp/dbi_sp11/DATA/1G/"; // dir where dbgen tpch files (extension *.tbl) can be found
 char *dbfile_dir = ""; 
 
 

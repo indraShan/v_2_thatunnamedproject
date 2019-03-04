@@ -8,10 +8,13 @@ tag = -n
 endif
 
 test.out: Record.o Comparison.o ComparisonEngine.o Schema.o File.o BigQ.o HeapFile.o SortedDBFile.o DBFile.o Pipe.o y.tab.o lex.yy.o test.o
-	$(CC) -o test.out Record.o Comparison.o ComparisonEngine.o Schema.o File.o BigQ.o HeapFile.o SortedDBFile.o DBFile.o Pipe.o y.tab.o lex.yy.o test.o -ll -lpthread
+	$(CC) -o test.out Record.o Comparison.o ComparisonEngine.o Schema.o File.o BigQ.o HeapFile.o SortedDBFile.o DBFile.o Pipe.o y.tab.o lex.yy.o test.o -lfl -lpthread
 	
+a2test.out: Record.o Comparison.o ComparisonEngine.o Schema.o File.o BigQ.o HeapFile.o SortedDBFile.o DBFile.o Pipe.o y.tab.o lex.yy.o a2-test.o
+	$(CC) -o a2test.out Record.o Comparison.o ComparisonEngine.o Schema.o File.o BigQ.o HeapFile.o SortedDBFile.o DBFile.o Pipe.o y.tab.o lex.yy.o a2-test.o -lfl -lpthread
+
 a1test.out: Record.o Comparison.o ComparisonEngine.o Schema.o File.o HeapFile.o SortedDBFile.o DBFile.o Pipe.o y.tab.o lex.yy.o a1-test.o
-	$(CC) -o a1test.out Record.o Comparison.o ComparisonEngine.o Schema.o File.o HeapFile.o SortedDBFile.o DBFile.o Pipe.o y.tab.o lex.yy.o a1-test.o -ll
+	$(CC) -o a1test.out Record.o Comparison.o ComparisonEngine.o Schema.o File.o HeapFile.o SortedDBFile.o DBFile.o Pipe.o y.tab.o lex.yy.o a1-test.o -lfl
 	
 test.o: test.cc
 	$(CC) -g -c test.cc
@@ -31,11 +34,11 @@ Pipe.o: Pipe.cc
 BigQ.o: BigQ.cc
 	$(CC) -g -c BigQ.cc
 
+HeapFile.o: HeapFile.cc
+	$(CC) -g -c HeapFile.cc
+
 SortedDBFile.o: SortedDBFile.cc
 	$(CC) -g -c SortedDBFile.cc
-
-HeapFIle.o: HeapFile.cc
-	$(CC) -g -c HeapFile.cc
 
 DBFile.o: DBFile.cc
 	$(CC) -g -c DBFile.cc
