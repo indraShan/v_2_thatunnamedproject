@@ -6,6 +6,7 @@
 #include "File.h"
 #include "Comparison.h"
 #include "ComparisonEngine.h"
+#include <string>
 
 
 // This stores an individual comparison that is part of a CNF
@@ -58,6 +59,8 @@ public:
 
 	// print to the screen
 	void Print ();
+
+	std::string toString();
 
 	// Sole purpose of this method is to help in testing this class.
 	void testing_helper_setAttributes(int numberOfAttributes, int* attibutes, Type *types);

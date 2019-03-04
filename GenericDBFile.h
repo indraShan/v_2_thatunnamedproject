@@ -8,15 +8,12 @@
 #include "Comparison.h"
 #include "ComparisonEngine.h"
 
-class File;
-class Page;
-
 typedef enum {heap, sorted, tree} fType;
 
 class GenericDBFile {
 
 public:
-	virtual ~GenericDBFile () {}
+	virtual ~GenericDBFile () {};
 
 	virtual int Create (const char *fpath, fType file_type, void *startup) = 0;
 	virtual int Open (const char *fpath) = 0;
@@ -28,7 +25,6 @@ public:
 	virtual void Add (Record &addme) = 0;
 	virtual int GetNext (Record &fetchme) = 0;
 	virtual int GetNext (Record &fetchme, CNF &cnf, Record &literal) = 0;
-
 };
 
 #endif

@@ -150,6 +150,23 @@ void OrderMaker :: Print () {
 }
 
 
+std::string OrderMaker :: toString () {
+	std::string oString;
+	oString += std::to_string(numAtts) + "\n";
+	for (int i = 0; i < numAtts; i++)
+	{
+		oString += std::to_string(whichAtts[i]) + " ";
+		if (whichTypes[i] == Int)
+			oString += "Int\n";
+		else if (whichTypes[i] == Double)
+			oString+="Double\n";
+		else
+			oString+="String\n";
+	}
+	return oString;
+}
+
+
 
 int CNF :: GetSortOrders (OrderMaker &left, OrderMaker &right) {
 
