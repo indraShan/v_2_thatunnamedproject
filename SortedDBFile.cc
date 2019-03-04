@@ -3,18 +3,6 @@
 #include "Comparison.h"
 #include <cstring>
 
-struct RecordComparator
-{
-    OrderMaker *orderMaker;
-    RecordComparator(OrderMaker *order) : orderMaker(order) {}
-
-    bool operator()(Record &left, Record &right) const
-    {
-        ComparisonEngine comp;
-        return comp.Compare(&left, &right, orderMaker) < 0;
-    }
-};
-
 struct SortOrder
 {
     OrderMaker *orderMaker;
@@ -42,9 +30,9 @@ OrderMaker *fakeOrderMaker()
 {
     // TODO: Memory leak on purpose.
     OrderMaker *maker = new OrderMaker();
-    int attributes[1] = {4};
-    Type types[1] = {String};
-    maker->testing_helper_setAttributes(1, attributes, types);
+	int attributes[1] = {10};
+	Type types[1] = {String};
+	maker->testing_helper_setAttributes(1, attributes, types);
     return maker;
 }
 
@@ -71,6 +59,9 @@ SortedDBFile::SortedDBFile()
     bigQueue = NULL;
     inputPipe = NULL;
     outputPipe = NULL;
+    tempFile = NULL;
+    filePath = NULL;
+    tempFilePath = NULL;
 }
 
 void SortedDBFile::moveReadPageToFirstRecord()
@@ -87,12 +78,14 @@ void SortedDBFile::moveReadPageToFirstRecord()
 void SortedDBFile::initState(bool createFile, const char *f_path, OrderMaker *order, int runLength)
 {
     actualFile = new File();
+    currentWritePage = new Page();
     currentReadPage = new Page();
     currentReadPageIndex = 0;
     lastReturnedRecordIndex = -1;
     this->fileOrderMaker = order;
     this->runLength = runLength;
     this->filePath = (char *)f_path;
+    this->tempFilePath = createCharByAppending(filePath, (char *)".temp.bin");
     // By default we start off in read mode.
     inReadMode = true;
 
@@ -127,7 +120,7 @@ int SortedDBFile::Open(const char *f_path)
         return 0;
     // TODO: Read ordermaker and run length from the meta data file.
     // TODO: Pass the actual order maker and run length
-    initState(false, f_path, fakeOrderMaker(), 1);
+    initState(false, f_path, fakeOrderMaker(), 10);
     return 1;
 }
 
@@ -188,9 +181,8 @@ void SortedDBFile::switchToReadMode()
 void SortedDBFile::createTempFile()
 {
     // TODO: Probable leak for char *?
-    char *temp_path = createCharByAppending(filePath, (char *)".temp.bin");
     tempFile = new File();
-    tempFile->Open(0, temp_path);
+    tempFile->Open(0, tempFilePath);
 }
 
 int SortedDBFile::getNextPipeRecord(Record *record)
@@ -198,7 +190,7 @@ int SortedDBFile::getNextPipeRecord(Record *record)
     return outputPipe->Remove(record);
 }
 
-int SortedDBFile::getNextFileRecord(Record *record)
+int SortedDBFile::readNextFileRecord(Record *record)
 {
     if (currentReadPage->GetFirst(record) == 0)
     {
@@ -211,7 +203,7 @@ int SortedDBFile::getNextFileRecord(Record *record)
             return 0;
         lastReturnedRecordIndex = -1;
         updatePageToLocation(currentReadPage, ++currentReadPageIndex, lastReturnedRecordIndex);
-        return getNextFileRecord(record);
+        return readNextFileRecord(record);
     }
     lastReturnedRecordIndex++;
     return 1;
@@ -238,8 +230,37 @@ void SortedDBFile::updatePageToLocation(Page *page, int pageIndex, int location)
     }
 }
 
+void SortedDBFile::writeSortedPageToTempFile() {
+    int length = tempFile->GetLength();
+    int offset = length == 0? 0 : length - 1;
+    tempFile->AddPage(currentWritePage, offset);
+}
+
+// Writes the given record to the temp file.
+void SortedDBFile::writeSortedRecordToTempFile(Record record) {
+    if (currentWritePage->Append(&record) == 0) {
+        // Append failed-> Page is full.
+        // Write this current page to disk.
+        writeSortedPageToTempFile();
+        currentWritePage->EmptyItOut();
+        writeSortedRecordToTempFile(record);
+        return;
+    }
+}
+
+// -> Merge BigQ with File. Mode = reading.
+//      new file instance.
+//      Shutdown inputpipe.
+//      Output remove in loop
+//      Current file current page
+//      Compare write to new instance file.
+//      updates new files name in metadata.
+// free bigQ
+// bigQ = nil
+// Reset reset pointer to correct location in file.
 void SortedDBFile::writePipeRecordsToFile()
 {
+    printf("writePipeRecordsToFile called \n");
     createTempFile();
     inputPipe->ShutDown();
     // Reset current read page to be at the first record of the file.
@@ -250,10 +271,9 @@ void SortedDBFile::writePipeRecordsToFile()
 
     // Get first records from both sources.
     int pipe = getNextPipeRecord(&pipeRecord);
-    int file = getNextFileRecord(&fileRecord);
+    int file = readNextFileRecord(&fileRecord);
 
-    Page currentWritePage;
-    currentWritePage.EmptyItOut();
+    currentWritePage->EmptyItOut();
     ComparisonEngine comp;
     // Compare records from the output pipe, with records in the
     // current file.
@@ -267,58 +287,60 @@ void SortedDBFile::writePipeRecordsToFile()
             {
                 // pipeRecord is smaller
                 // Write pipe record to temp file.
-                
+                writeSortedRecordToTempFile(pipeRecord);
                 pipe = getNextPipeRecord(&pipeRecord);
             }
             else
             {
                 // fileRecord is smaller
                 // Write fileRecord record to temp file.
-                file = getNextFileRecord(&fileRecord);
+                writeSortedRecordToTempFile(fileRecord);
+                file = readNextFileRecord(&fileRecord);
             }
         }
         else if (pipe != 0)
         {
             // Write pipe record. Progress
+            writeSortedRecordToTempFile(pipeRecord);
             pipe = getNextPipeRecord(&pipeRecord);
         }
         else
         {
             // Write fileRecord record to temp file.
-            file = getNextFileRecord(&fileRecord);
+            writeSortedRecordToTempFile(fileRecord);
+            file = readNextFileRecord(&fileRecord);
         }
     } while (pipe != 0 || file != 0);
+    printf("After loop \n");
+    writeSortedPageToTempFile();
 
     // Close current file.
     // Delete pointer.
-    // Delete file.
-
+    // TODO: Delete file.
+    actualFile->Close();
+    delete actualFile;
+    actualFile = NULL;
+    remove(filePath);
+    
     // Close temp file
     // Delete pointer.
-    // Rename file.
+    // TODO: Rename file.
+    tempFile->Close();
+    delete tempFile;
+    tempFile = NULL;
+    rename(tempFilePath, filePath);
 
     // Reset currentFile pointer to open the renamed file.
     // Go back to last read position
     // Rest current read page to first record or to correct place.
-
-    tempFile->Close();
-    delete tempFile;
-    tempFile = NULL;
+    actualFile = new File();
+    actualFile->Open(1, filePath);
+    moveReadPageToFirstRecord();
 }
 
 // writing -> insert to BigQ  (done)
 // reading -> BigQ must be nil. Create BigQ. Insert. Mode = write. (done)
 // Mode-> Writing. GetNext, Close, MoveFirst.
-// -> Merge BigQ with File. Mode = reading.
-//      new file instance.
-//      Shutdown inputpipe.
-//      Output remove in loop
-//      Current file current page
-//      Compare write to new instance file.
-//      updates new files name in metadata.
-// free bigQ
-// bigQ = nil
-// Reset reset pointer to correct location in file.
 void SortedDBFile::Add(Record &rec)
 {
     printf("Add called. Sorted DV \n");
@@ -343,7 +365,7 @@ int SortedDBFile::GetNext(Record &fetchme)
         switchToReadMode();
         return GetNext(fetchme);
     }
-    return getNextFileRecord(&fetchme);
+    return readNextFileRecord(&fetchme);
 }
 
 // you look to see if the attribute is present in any of the
@@ -355,6 +377,7 @@ int SortedDBFile::GetNext(Record &fetchme)
 // then you add it to the end of the “query” OrderMaker that you are constructing
 int SortedDBFile::GetNext(Record &fetchme, CNF &cnf, Record &literal)
 {
+    // OrderMaker *queryMaker = cnf.constructQuerySortOrderFromFileOrder(fileOrderMaker); 
     // Build query order maker from cnf
     //      Go through the attributes of this.orderMaker one by one.
     //      First to last.
@@ -378,12 +401,22 @@ int SortedDBFile::GetNext(Record &fetchme, CNF &cnf, Record &literal)
 
 void SortedDBFile::MoveFirst()
 {
+    if (inReadMode == false)
+    {
+        switchToReadMode();
+        return;
+    }
+    moveReadPageToFirstRecord();
 }
 
 // TODO: Dealloc everything
 int SortedDBFile::Close()
 {
     cout << "Close called.\n";
+    if (inReadMode == false)
+    {
+        switchToReadMode();
+    }
     // If file or page is null, we have already closed this file.
     if (actualFile == NULL)
         return 0;
@@ -391,6 +424,22 @@ int SortedDBFile::Close()
     actualFile->Close();
     delete actualFile;
     actualFile = NULL;
+
+    delete currentReadPage;
+    currentReadPage = NULL;
+
+    delete currentWritePage;
+    currentWritePage = NULL;
+
+    if (tempFile != NULL) {
+        tempFile->Close();
+        delete tempFile;
+        tempFile = NULL;
+    }
+ 
+    // TODO: Why this crashes? leak?
+    // delete filePath;
+    // delete tempFilePath;
 
     return 1;
 }

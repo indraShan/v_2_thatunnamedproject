@@ -7,20 +7,22 @@
 class SortedDBFile : public GenericDBFile {
 
 private:
+    Page *currentReadPage;
 	File *actualFile;
     File *tempFile;
-    OrderMaker *fileOrderMaker;
-    int runLength;
     BigQ *bigQueue;
-    OrderMaker *queryOrderMaker;
     Pipe *inputPipe;
     Pipe *outputPipe;
     char *filePath;
+    char *tempFilePath;
+    Page *currentWritePage;
+    OrderMaker *queryOrderMaker;
+    OrderMaker *fileOrderMaker;
+    int runLength;
     // True when the file is is read mode.
     bool inReadMode;
     int currentReadPageIndex;
 	int lastReturnedRecordIndex;
-    Page *currentReadPage;
     bool fileExists(const char *f_path);
     void initState(bool createFile, const char *f_path, OrderMaker *order, int runLength);
     void initializeBigQueue();
@@ -29,9 +31,11 @@ private:
     void switchToReadMode();
     void createTempFile();
     int getNextPipeRecord(Record *record);
-    int getNextFileRecord(Record *record);
+    int readNextFileRecord(Record *record);
     void moveReadPageToFirstRecord();
     void updatePageToLocation(Page *page, int pageIndex, int location);
+    void writeSortedRecordToTempFile(Record record);
+    void writeSortedPageToTempFile();
 
 public:
     SortedDBFile (); 

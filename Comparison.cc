@@ -149,6 +149,48 @@ void OrderMaker :: Print () {
 	}
 }
 
+// If this attribute is in the CNF instance, and it is the only
+// attribute present in its subexpression, an
+OrderMaker *CNF::constructQuerySortOrderFromFileOrder(OrderMaker *fileOrder)
+{
+	int numberOfAttributes = 0;
+	int attributes[MAX_ANDS];
+	Type types[MAX_ANDS];
+	for (int orderIndex = 0; orderIndex < fileOrder->numAtts; orderIndex++)
+	{
+		bool foundMatch = false;
+		for (int cnfIndex = 0; cnfIndex < numAnds; cnfIndex++)
+		{
+			// if we don't have a disjunction of length one, then it
+			// can't be acceptable for use with a sort ordering
+			if (orLens[cnfIndex] != 1)
+			{
+				continue;
+			}
+
+			// made it this far, so first verify that it is an equality check
+			if (orList[cnfIndex][0].op != Equals)
+			{
+				continue;
+			}
+
+			if (orList[cnfIndex][0].operand2 != Literal)
+			{
+				continue;
+			}
+
+			// TODO:
+			// CNF instance says that it is comparing that attribute
+			// with a literal value with an equality check
+			attributes[numberOfAttributes] = fileOrder->whichAtts[orderIndex];
+			types[numberOfAttributes] = orList[cnfIndex][0].attType;
+			numberOfAttributes++;
+		}
+	}
+	OrderMaker *maker = new OrderMaker();
+	maker->testing_helper_setAttributes(numberOfAttributes, attributes, types);
+	return maker;
+}
 
 std::string OrderMaker :: toString () {
 	std::string oString;
@@ -165,8 +207,6 @@ std::string OrderMaker :: toString () {
 	}
 	return oString;
 }
-
-
 
 int CNF :: GetSortOrders (OrderMaker &left, OrderMaker &right) {
 
