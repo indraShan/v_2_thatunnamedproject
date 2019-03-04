@@ -9,7 +9,10 @@
 #include "Defs.h"
 #include <iostream>
 
-DBFile::DBFile() {}
+DBFile::DBFile() {
+    actualFile = NULL;
+    currentPage = NULL;
+}
 
 DBFile ::~DBFile() {
     cout << "DBFile being destroyed\n";
