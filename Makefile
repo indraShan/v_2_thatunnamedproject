@@ -7,10 +7,10 @@ ifdef linux
 tag = -n
 endif
 
-test.out: Record.o Comparison.o ComparisonEngine.o Schema.o File.o BigQ.o DBFile.o Pipe.o y.tab.o lex.yy.o test.o
+test.out: Record.o Comparison.o ComparisonEngine.o Schema.o File.o BigQ.o HeapFIle.o SortedDBFile.o DBFile.o Pipe.o y.tab.o lex.yy.o test.o
 	$(CC) -o test.out Record.o Comparison.o ComparisonEngine.o Schema.o File.o BigQ.o DBFile.o Pipe.o y.tab.o lex.yy.o test.o -lfl -lpthread
 	
-a1test.out: Record.o Comparison.o ComparisonEngine.o Schema.o File.o DBFile.o Pipe.o y.tab.o lex.yy.o a1-test.o
+a1test.out: Record.o Comparison.o ComparisonEngine.o Schema.o File.o HeapFIle.o SortedDBFile.o DBFile.o Pipe.o y.tab.o lex.yy.o a1-test.o
 	$(CC) -o a1test.out Record.o Comparison.o ComparisonEngine.o Schema.o File.o DBFile.o Pipe.o y.tab.o lex.yy.o a1-test.o -lfl
 	
 test.o: test.cc
@@ -31,6 +31,12 @@ Pipe.o: Pipe.cc
 BigQ.o: BigQ.cc
 	$(CC) -g -c BigQ.cc
 
+SortedDBFile.o: SortedDBFile.cc
+	$(CC) -g -c SortedDBFile.cc
+
+HeapFIle.o: HeapFIle.cc
+	$(CC) -g -c HeapFIle.cc
+
 DBFile.o: DBFile.cc
 	$(CC) -g -c DBFile.cc
 
@@ -45,7 +51,7 @@ Schema.o: Schema.cc
 	
 y.tab.o: Parser.y
 	yacc -d Parser.y
-	sed $(tag) y.tab.c -e "s/  __attribute__ ((__unused__))$$/# ifndef __cplusplus\n  __attribute__ ((__unused__));\n# endif/" 
+	gsed $(tag) y.tab.c -e "s/  __attribute__ ((__unused__))$$/# ifndef __cplusplus\n  __attribute__ ((__unused__));\n# endif/" 
 	g++ -c y.tab.c
 
 lex.yy.o: Lexer.l
