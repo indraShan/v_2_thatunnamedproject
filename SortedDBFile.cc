@@ -1,6 +1,7 @@
 #include "SortedDBFile.h"
 #include <iostream>
 #include "Comparison.h"
+#include <cstring>
 
 struct RecordComparator
 {
@@ -187,7 +188,7 @@ void SortedDBFile::switchToReadMode()
 void SortedDBFile::createTempFile()
 {
     // TODO: Probable leak for char *?
-    char *temp_path = createCharByAppending(filePath, ".temp.bin");
+    char *temp_path = createCharByAppending(filePath, (char *)".temp.bin");
     tempFile = new File();
     tempFile->Open(0, temp_path);
 }
