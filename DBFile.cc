@@ -5,12 +5,11 @@
 #include "Comparison.h"
 #include "ComparisonEngine.h"
 #include "HeapFile.h"
+#include "SortedDBFile.h"
 #include "DBFile.h"
 #include "Defs.h"
 #include <iostream>
-#include <map>
 #include <fstream>
-#include <sstream>
 
 DBFile::DBFile() {
     dbInstance = NULL;
@@ -21,14 +20,22 @@ DBFile ::~DBFile() {
     Close();
 }
 
+// Returns true if the file exists at given path.
+// false otherwise.
+bool DBFile::fileExists(const char *f_path) {
+    struct stat buf;
+    return (stat(f_path, &buf) == 0);
+}
 
 int DBFile::Create(const char *f_path, fType f_type, void *startup)
 {
     if(f_type == heap){
         dbInstance = new HeapFile();
     }
-    dbInstance->Create(f_path, f_type, startup);
-    return 1;
+    else if(f_type == sorted){
+        dbInstance = new SortedDBFile();
+    }
+    return dbInstance->Create(f_path, f_type, startup);
 }
 
 void DBFile::Load(Schema &f_schema, const char *loadpath) {
@@ -37,13 +44,14 @@ void DBFile::Load(Schema &f_schema, const char *loadpath) {
 
 
 int DBFile::Open(const char *f_path) {
+    if (!fileExists(f_path)) return 0;
     // Check the meta data
-    std::string f_type, f_name, line, numAtts;
+    std::string f_type;
     std::ifstream file(string(f_path)+".meta");
     if (file.is_open()) {
         // Read contents of the metadata to get file properties
         std::getline(file,f_type);
-        std::getline(file,f_name);
+        file.close();
     }
     else{
         cout << "Couldn't find meta file. Please try creating the database file again.";
@@ -54,35 +62,8 @@ int DBFile::Open(const char *f_path) {
         dbInstance = new HeapFile();    
     else if(f_type == "sorted"){
         // Change to sortedfile
-        dbInstance = new HeapFile();
-        map<string,Type> typeMap;
-        typeMap["String"] =  String;
-        typeMap["Int"] =  Int;
-        typeMap["Double"] =  Double;
-        // Get the number of attributes in orderMaker
-        std::getline(file,numAtts);
-        int nAtts = std::stoi(numAtts);
-        OrderMaker o;
-        if(nAtts > 0){
-            int attributes[nAtts];
-            Type types[nAtts];
-            int i = 0;
-            // Read each attribute and generate arrays of attributes and their types
-            while(std::getline(file,line)){
-                std::istringstream iss(line);
-                int index;
-                string dType;
-                if (!(iss >> index >> dType)) { break; }
-                attributes[i] = index;
-                types[i] = typeMap[dType];
-                i++;
-            }
-
-            // Create an OrderMaker with the attributes read from file
-            o.testing_helper_setAttributes(nAtts, attributes, types);
-        }
+        dbInstance = new SortedDBFile();
     }    
-    file.close();
     return dbInstance->Open(f_path);
 }
 
@@ -95,6 +76,7 @@ int DBFile::Close() {
     
     dbInstance->Close();
     dbInstance = NULL;
+    return 1;
 }
 
 

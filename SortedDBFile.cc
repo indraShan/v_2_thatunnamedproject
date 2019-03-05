@@ -2,6 +2,9 @@
 #include <iostream>
 #include "Comparison.h"
 #include <cstring>
+#include <map>
+#include <fstream>
+#include <sstream>
 
 struct SortOrder
 {
@@ -25,16 +28,6 @@ char *createCharByAppending(char *array, char *append)
     return result;
 }
 
-// TODO: Remove later.
-OrderMaker *fakeOrderMaker()
-{
-    // TODO: Memory leak on purpose.
-    OrderMaker *maker = new OrderMaker();
-	int attributes[1] = {10};
-	Type types[1] = {String};
-	maker->testing_helper_setAttributes(1, attributes, types);
-    return maker;
-}
 
 // Returns true if the file exists at given path.
 // false otherwise.
@@ -93,6 +86,14 @@ void SortedDBFile::initState(bool createFile, const char *f_path, OrderMaker *or
     actualFile->Open(createFile == true ? 0 : 1, f_path);
     moveReadPageToFirstRecord();
     cout << "Number of pages = " << actualFile->GetLength() << "\n";
+    if(createFile){
+        // Create a meta file to store the type and name of the file
+        std::ofstream outfile (string(f_path) + ".meta");
+        outfile << "sorted" << std::endl;
+        outfile << runLength << std::endl;
+        outfile << order->toString() << std::endl;
+        outfile.close();
+    }
 }
 
 // Create the metadata file in the same folder where
@@ -118,9 +119,38 @@ int SortedDBFile::Open(const char *f_path)
     cout << "Open called \n";
     if (!fileExists(f_path))
         return 0;
-    // TODO: Read ordermaker and run length from the meta data file.
-    // TODO: Pass the actual order maker and run length
-    initState(false, f_path, fakeOrderMaker(), 10);
+
+    std::string f_type, runlength, line, numAtts;
+    std::ifstream file(string(f_path)+".meta");
+    getline(file,f_type);
+    getline(file,runlength);
+    map<string,Type> typeMap;
+    typeMap["String"] =  String;
+    typeMap["Int"] =  Int;
+    typeMap["Double"] =  Double;
+    // Get the number of attributes in orderMaker
+    std::getline(file,numAtts);
+    int nAtts = std::stoi(numAtts);
+    OrderMaker *o;
+    if(nAtts > 0){
+        int attributes[nAtts];
+        Type types[nAtts];
+        int i = 0;
+        // Read each attribute and generate arrays of attributes and their types
+        while(std::getline(file,line)){
+            std::istringstream iss(line);
+            int index;
+            string dType;
+            if (!(iss >> index >> dType)) { break; }
+            attributes[i] = index;
+            types[i] = typeMap[dType];
+            i++;
+        }
+
+        // Create an OrderMaker with the attributes read from file
+        o->testing_helper_setAttributes(nAtts, attributes, types);
+    }
+    initState(false, f_path, o, stoi(runlength));
     return 1;
 }
 

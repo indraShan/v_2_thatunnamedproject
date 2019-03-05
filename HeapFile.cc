@@ -7,6 +7,7 @@
 #include "HeapFile.h"
 #include "Defs.h"
 #include <iostream>
+#include <fstream>
 
 HeapFile::HeapFile() {
     actualFile = NULL;
@@ -45,6 +46,12 @@ void HeapFile::initState(bool createFile, const char *f_path) {
         actualFile->GetPage(currentPage, 0);
     }
     cout << "Number of pages = " << actualFile->GetLength() << "\n";
+    if(createFile){
+        // Create a meta file to store the type and name of the file
+        std::ofstream outfile (string(f_path) + ".meta");
+        outfile << "heap" << std::endl;
+        outfile.close();
+    }
 }
 
 int HeapFile::Create(const char *f_path, fType f_type, void *startup)

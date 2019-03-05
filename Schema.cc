@@ -36,7 +36,7 @@ Attribute *Schema :: GetAtts () {
 	return myAtts;
 }
 
-Schema :: Schema (char *fName, char *relName) {
+Schema :: Schema (const char *fName, const char *relName) {
 
 	FILE *foo = fopen (fName, "r");
 	

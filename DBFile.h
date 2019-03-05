@@ -20,12 +20,10 @@ class DBFile {
 
 private:
 	GenericDBFile *dbInstance;
-	
-
+	bool fileExists(const char *f_path);
 public:
 	DBFile (); 
 	virtual ~DBFile ();
-
 	int Create (const char *fpath, fType file_type, void *startup);
 	int Open (const char *fpath);
 	int Close ();
