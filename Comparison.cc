@@ -103,36 +103,12 @@ OrderMaker :: OrderMaker(Schema *schema) {
 }
 
 void OrderMaker::testing_helper_setAttributes(int numberOfAttributes, int* attibutes, Type *types) {
-	numAtts = 0;
-
-	int n = numberOfAttributes;
-
-	for (int i = 0; i < n; i++) {
-		if (*(types + i) == Int) {
-			whichAtts[numAtts] = i;
-			whichTypes[numAtts] = Int;
-			numAtts++;
-		}
+	numAtts = numberOfAttributes;
+	for (int index = 0; index < numAtts; index++)
+	{
+		whichAtts[index] = *(attibutes + index);
+		whichTypes[index] = *(types + index);
 	}
-
-	// now add in the doubles
-	for (int i = 0; i < n; i++) {
-                if (*(types + i) == Double) {
-                        whichAtts[numAtts] = i;
-                        whichTypes[numAtts] = Double;
-                        numAtts++;
-                }
-        }
-
-	// and finally the strings
-        for (int i = 0; i < n; i++) {
-                if (*(types + i) == String) {
-                        whichAtts[numAtts] = i;
-                        whichTypes[numAtts] = String;
-                        numAtts++;
-                }
-        }
-
 }
 
 void OrderMaker :: Print () {
@@ -179,14 +155,22 @@ OrderMaker *CNF::constructQuerySortOrderFromFileOrder(OrderMaker *fileOrder)
 				continue;
 			}
 
+			if (fileOrder->whichAtts[orderIndex] != orList[cnfIndex][0].whichAtt1) {
+				continue;
+			}
+			foundMatch = true;
 			// TODO:
 			// CNF instance says that it is comparing that attribute
 			// with a literal value with an equality check
 			attributes[numberOfAttributes] = fileOrder->whichAtts[orderIndex];
-			types[numberOfAttributes] = orList[cnfIndex][0].attType;
+			types[numberOfAttributes] = fileOrder->whichTypes[orderIndex];
 			numberOfAttributes++;
 		}
+		if (foundMatch == false) {
+			break;
+		}
 	}
+	if (numberOfAttributes == 0) return NULL;
 	OrderMaker *maker = new OrderMaker();
 	maker->testing_helper_setAttributes(numberOfAttributes, attributes, types);
 	return maker;

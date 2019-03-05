@@ -36,6 +36,8 @@ private:
     void updatePageToLocation(Page *page, int pageIndex, int location);
     void writeSortedRecordToTempFile(Record record);
     void writeSortedPageToTempFile();
+    void binarySearchFileToFind(Record *literal, Record *record, int start, int end, int* resultPage, int* recordIndexInPage);
+    void linearSearchPageToFind(Record *literal, Record *record, int pageIndex, int* resultPage, int* recordIndexInPage);
 
 public:
     SortedDBFile (); 

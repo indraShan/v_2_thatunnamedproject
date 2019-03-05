@@ -28,7 +28,6 @@ char *createCharByAppending(char *array, char *append)
     return result;
 }
 
-
 // Returns true if the file exists at given path.
 // false otherwise.
 bool SortedDBFile::fileExists(const char *f_path)
@@ -398,6 +397,114 @@ int SortedDBFile::GetNext(Record &fetchme)
     return readNextFileRecord(&fetchme);
 }
 
+// Searches the entire page to check if is present in it.
+void SortedDBFile::linearSearchPageToFind(Record *literal, Record *record,
+                                          int pageIndex, int *resultPage,
+                                          int *recordIndexInPage)
+{
+    Page page;
+    actualFile->GetPage(&page, pageIndex);
+    // The page doesnt have data?
+    if (page.GetFirst(record) == 0)
+    {
+        *resultPage = -1;
+        *recordIndexInPage = -1;
+        return;
+    }
+    ComparisonEngine comp;
+    int result = comp.Compare(literal, record, queryOrderMaker);
+    int recordIndex = 0; 
+    while (result < 0)
+    {
+        if (page.GetFirst(record) == 0)
+        {
+            break;
+        }
+        recordIndex++;
+        result = comp.Compare(literal, record, queryOrderMaker);
+    }
+    if (result == 0)
+    {
+        *resultPage = pageIndex;
+        *recordIndexInPage = recordIndex;
+        return;
+    }
+    *resultPage = -1;
+    *recordIndexInPage = -1;
+}
+
+// Binary searches the file starting at current record
+// to find a record that equals the literal for current queryOrderMaker
+void SortedDBFile::binarySearchFileToFind(Record *literal, Record *record,
+                                          int start, int end,
+                                          int *resultPage, int *recordIndexInPage)
+{
+    // printf("binarySearchFileToFind called \n");
+    if (start > end)
+    {
+        *resultPage = -1;
+        *recordIndexInPage = -1;
+        return;
+    }
+    if (start == end)
+    {
+        linearSearchPageToFind(literal, record, start, resultPage, recordIndexInPage);
+        return;
+    }
+    int mid = start + (end - start) / 2;
+
+    // Get the page at mid index.
+    Page page;
+    actualFile->GetPage(&page, mid);
+
+    // The page doesnt have data?
+    if (page.GetFirst(record) == 0)
+    {
+        *resultPage = -1;
+        *recordIndexInPage = -1;
+        return;
+    }
+    ComparisonEngine comp;
+    int result = comp.Compare(literal, record, queryOrderMaker);
+
+    // If temp is equal to literal, return success.
+    if (result == 0)
+    {
+        *resultPage = mid;
+        *recordIndexInPage = 0;
+        return;
+    }
+    else if (result < 0)
+    {
+        // Literal falls to the left of record.
+        binarySearchFileToFind(literal, record, start, mid - 1, resultPage, recordIndexInPage);
+    }
+    else
+    {
+        // Its possible that the literal is contained in this page.
+        // Check if the literal is lesser than first record of next page.
+        page.EmptyItOut();
+        actualFile->GetPage(&page, mid+1);
+        if (page.GetFirst(record) == 0)
+        {   
+            *resultPage = -1;
+            *recordIndexInPage = -1;
+            return;
+        }
+        ComparisonEngine comp;
+        result = comp.Compare(literal, record, queryOrderMaker);
+        if (result < 0) {
+            // Literal is contained within current page.
+            linearSearchPageToFind(literal, record, mid, resultPage, recordIndexInPage);
+        }
+        else {
+            // Literal falls right of current mid page.
+            binarySearchFileToFind(literal, record, mid+1, end, resultPage, recordIndexInPage);
+        }
+    }
+}
+
+// TODO: Make sure indexes reset to correct place in all cases.
 // you look to see if the attribute is present in any of the
 // subexpressions (disjunctions) in the CNF instance that you
 // are asked to search on. If this attribute is in the CNF instance,
@@ -407,25 +514,44 @@ int SortedDBFile::GetNext(Record &fetchme)
 // then you add it to the end of the “query” OrderMaker that you are constructing
 int SortedDBFile::GetNext(Record &fetchme, CNF &cnf, Record &literal)
 {
-    // OrderMaker *queryMaker = cnf.constructQuerySortOrderFromFileOrder(fileOrderMaker); 
-    // Build query order maker from cnf
-    //      Go through the attributes of this.orderMaker one by one.
-    //      First to last.
-    //      For each attribute in this.orderMaker check if the attribute
-    //      is present in CNF.
-    //          if present add it to then end of Query OrderMaker.
-    // If order maker is null, return first record of the file
-    // Do a binary search on the file to find a record equal to literal using
-    // the query order maker
-    // If no record equals the literal for given query, return 0.
-    // If found:
-    //      Start scanning the file starting with found record
-    //      For each record,
-    //          check if record equals literal using query order maker - return 0 if not.
-    //          then, check if record equals literal using CNF.
-    //          if not go to next record -> repeat last two steps
-    //          else return the matching record to caller.
-    //          return 0 on eof before finding a record.
+    printf("GetNext with CNF called\n");
+    if (inReadMode == false)
+    {
+        switchToReadMode();
+        return GetNext(fetchme, cnf, literal);
+    }
+
+    queryOrderMaker = cnf.constructQuerySortOrderFromFileOrder(fileOrderMaker);
+    // TODO: Verify if this scenario is correct
+    if (queryOrderMaker == NULL) {
+        printf("No matching sort order!! \n");
+        // Return first record of the file.
+        if (currentReadPageIndex != 0 || lastReturnedRecordIndex != -1) {
+            MoveFirst();
+        }
+        return readNextFileRecord(&fetchme);
+    }
+    queryOrderMaker->Print();
+    Record temp;
+    int startPageIndex = currentReadPageIndex;
+    int fileLength = actualFile->GetLength();
+    int endPageIndex = fileLength > 0 ? fileLength - 2 : 0;
+    int resultPage = -1;
+    int recordIndex = -1;
+    binarySearchFileToFind(&literal, &temp, startPageIndex, endPageIndex, &resultPage, &recordIndex);
+    if (resultPage == -1) return 0;
+    currentReadPageIndex = resultPage;
+    lastReturnedRecordIndex = recordIndex;
+    updatePageToLocation(currentReadPage, currentReadPageIndex, lastReturnedRecordIndex);
+
+    ComparisonEngine comp;
+    do {
+        if (comp.Compare(&literal, &temp, queryOrderMaker) != 0) return 0;
+        if (comp.Compare(&literal, &temp, &cnf) == 0) {
+            return 1;
+        }
+    } while(readNextFileRecord(&temp) != 0);
+    
     return 0;
 }
 
