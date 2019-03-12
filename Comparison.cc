@@ -109,7 +109,7 @@ void OrderMaker::testing_helper_setAttributes(int numberOfAttributes, int* attib
 
 	for (int i = 0; i < n; i++) {
 		if (*(types + i) == Int) {
-			whichAtts[numAtts] = i;
+			whichAtts[numAtts] = attibutes[i];
 			whichTypes[numAtts] = Int;
 			numAtts++;
 		}
@@ -118,7 +118,7 @@ void OrderMaker::testing_helper_setAttributes(int numberOfAttributes, int* attib
 	// now add in the doubles
 	for (int i = 0; i < n; i++) {
                 if (*(types + i) == Double) {
-                        whichAtts[numAtts] = i;
+                        whichAtts[numAtts] = attibutes[i];
                         whichTypes[numAtts] = Double;
                         numAtts++;
                 }
@@ -127,7 +127,7 @@ void OrderMaker::testing_helper_setAttributes(int numberOfAttributes, int* attib
 	// and finally the strings
         for (int i = 0; i < n; i++) {
                 if (*(types + i) == String) {
-                        whichAtts[numAtts] = i;
+                        whichAtts[numAtts] = attibutes[i];
                         whichTypes[numAtts] = String;
                         numAtts++;
                 }
