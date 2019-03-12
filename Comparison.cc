@@ -103,12 +103,36 @@ OrderMaker :: OrderMaker(Schema *schema) {
 }
 
 void OrderMaker::testing_helper_setAttributes(int numberOfAttributes, int* attibutes, Type *types) {
-	numAtts = numberOfAttributes;
-	for (int index = 0; index < numAtts; index++)
-	{
-		whichAtts[index] = *(attibutes + index);
-		whichTypes[index] = *(types + index);
+	numAtts = 0;
+
+	int n = numberOfAttributes;
+
+	for (int i = 0; i < n; i++) {
+		if (*(types + i) == Int) {
+			whichAtts[numAtts] = i;
+			whichTypes[numAtts] = Int;
+			numAtts++;
+		}
 	}
+
+	// now add in the doubles
+	for (int i = 0; i < n; i++) {
+                if (*(types + i) == Double) {
+                        whichAtts[numAtts] = i;
+                        whichTypes[numAtts] = Double;
+                        numAtts++;
+                }
+        }
+
+	// and finally the strings
+        for (int i = 0; i < n; i++) {
+                if (*(types + i) == String) {
+                        whichAtts[numAtts] = i;
+                        whichTypes[numAtts] = String;
+                        numAtts++;
+                }
+        }
+
 }
 
 void OrderMaker :: Print () {

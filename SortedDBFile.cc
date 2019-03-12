@@ -85,7 +85,7 @@ void SortedDBFile::initState(bool createFile, const char *f_path, OrderMaker *or
     actualFile->Open(createFile == true ? 0 : 1, f_path);
     moveReadPageToFirstRecord();
     cout << "Number of pages = " << actualFile->GetLength() << "\n";
-    if(createFile){
+    if (createFile){
         // Create a meta file to store the type and name of the file
         std::ofstream outfile (string(f_path) + ".meta");
         outfile << "sorted" << std::endl;
@@ -102,12 +102,13 @@ void SortedDBFile::initState(bool createFile, const char *f_path, OrderMaker *or
 int SortedDBFile::Create(const char *f_path, fType f_type, void *startup)
 {
     cout << "create called \n";
-    SortOrder sortOrder = *((SortOrder *)&startup);
+    SortOrder *sortOrder = ((SortOrder *)startup);
+    // printf("run length = %d \n", sortOrder->runLength);
     // Assumption: if file already exists, it would be over written.
     // TODO: Order maker should allocated again here.
     // TODO: Pass the actual order maker and run length
     initState(true, createCharArrayByCopying((char *)f_path),
-              sortOrder.orderMaker, sortOrder.runLength);
+              sortOrder->orderMaker, sortOrder->runLength);
     return 1;
 }
 
@@ -130,7 +131,7 @@ int SortedDBFile::Open(const char *f_path)
     // Get the number of attributes in orderMaker
     std::getline(file,numAtts);
     int nAtts = std::stoi(numAtts);
-    OrderMaker *o;
+    OrderMaker *o = new OrderMaker();
     if(nAtts > 0){
         int attributes[nAtts];
         Type types[nAtts];
@@ -145,7 +146,6 @@ int SortedDBFile::Open(const char *f_path)
             types[i] = typeMap[dType];
             i++;
         }
-
         // Create an OrderMaker with the attributes read from file
         o->testing_helper_setAttributes(nAtts, attributes, types);
     }
